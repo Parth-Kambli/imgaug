@@ -24,6 +24,8 @@ try:
 except ImportError:
     numba = None
 
+from packaging import version
+
 
 ALL = "ALL"
 
@@ -36,9 +38,29 @@ DEFAULT_FONT_FP = os.path.join(
 # to check if a dtype instance is among these dtypes, use e.g.
 # `dtype.type in  NP_FLOAT_TYPES` do not just use `dtype in NP_FLOAT_TYPES` as
 # that would fail
-NP_FLOAT_TYPES = set(np.sctypes["float"])
-NP_INT_TYPES = set(np.sctypes["int"])
-NP_UINT_TYPES = set(np.sctypes["uint"])
+np_version = version.parse(np.__version__)
+
+NP_FLOAT_TYPES = set()
+NP_INT_TYPES = set()
+NP_UINT_TYPES = set()
+
+try:
+    if np_version < version.parse("2.0.0"):
+        NP_FLOAT_TYPES = set(np.sctypes["float"])
+        NP_INT_TYPES = set(np.sctypes["int"])
+        NP_UINT_TYPES = set(np.sctypes["uint"])
+    else:
+        NP_FLOAT_TYPES = {np.float16, np.float32, np.float64}
+        if hasattr(np, 'float128'):
+            NP_FLOAT_TYPES.add(np.float128)
+        NP_INT_TYPES = {np.int8, np.int16, np.int32, np.int64}
+        NP_UINT_TYPES = {np.uint8, np.uint16, np.uint32, np.uint64}
+
+except KeyError as e:
+    raise RuntimeError(f"Error extracting types from numpy: {e}")
+except Exception as e:
+    raise RuntimeError(f"An unexpected error occurred: {e}")
+
 
 IMSHOW_BACKEND_DEFAULT = "matplotlib"
 
